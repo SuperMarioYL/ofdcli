@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Page xmlns:ofd="http://www.ofdspec.org/2016" ID="Page_1">
+  <ofd:Area Boundary="0 0 210 297"/>
+  <ofd:Content>
+    <ofd:Layer ID="Layer_0" Type="Body">
+      <ofd:TextObject ID="Text_0" Boundary="20 20 170 12" Font="Font_0" Size="14">
+        <ofd:TextCode X="0" Y="0">会议时间：2026年9月1日</ofd:TextCode>
+      </ofd:TextObject>
+      <ofd:ImageObject ID="Image_0" Boundary="60 40 90 90" ResourceID="R_0"/>
+    </ofd:Layer>
+  </ofd:Content>
+</ofd:Page>

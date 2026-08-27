@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Page xmlns:ofd="http://www.ofdspec.org/2016" ID="Page_0">
+  <ofd:Area Boundary="0 0 210 297"/>
+  <ofd:Content>
+    <ofd:Layer ID="Layer_0" Type="Body">
+      <ofd:TextObject ID="Text_0" Boundary="56.7 20 96.6 40" Font="Font_0" Size="22">
+        <ofd:TextCode X="0" Y="0">关于召开项目推进会的通知</ofd:TextCode>
+      </ofd:TextObject>
+      <ofd:TextObject ID="Text_1" Boundary="20 80 170 12" Font="Font_0" Size="14">
+        <ofd:TextCode X="0" Y="0">各有关单位：</ofd:TextCode>
+      </ofd:TextObject>
+      <ofd:PathObject ID="Path_0" Boundary="20 100 170 0.5">
+        <ofd:AbbreviatedLineOrPoint>M 20 100 L 190 100</ofd:AbbreviatedLineOrPoint>
+      </ofd:PathObject>
+    </ofd:Layer>
+  </ofd:Content>
+</ofd:Page>

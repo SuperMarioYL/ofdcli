@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ofd:OFD xmlns:ofd="http://www.ofdspec.org/2016" DocType="OFD" Version="1.1">
+  <ofd:DocBody>
+    <ofd:DocInfo>
+      <ofd:DocID>ofdsample-0001</ofd:DocID>
+      <ofd:Title>关于召开项目推进会的通知</ofd:Title>
+      <ofd:Author>政务办公厅</ofd:Author>
+      <ofd:Creator>ofdcli</ofd:Creator>
+      <ofd:CreationDate>2026-08-28</ofd:CreationDate>
+      <ofd:ModDate>2026-08-28</ofd:ModDate>
+    </ofd:DocInfo>
+    <ofd:DocRoot>Doc_0/Document.xml</ofd:DocRoot>
+  </ofd:DocBody>
+</ofd:OFD>

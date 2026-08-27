@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "name": "ofdcli",
+  "github": "https://github.com/SuperMarioYL/ofdcli",
+  "host": "ofdcli.lei6393.com",
+  "lang": { "primary": "zh", "toggle": true },
+  "accent": ["#5E5CE6", "#7c6ff5", "#a59cf5"],
+  "hero": {
+    "eyebrow": { "zh": "信创 · 政务版式 · 单二进制", "en": "信创 · Gov Format · Single Binary" },
+    "headline": {
+      "zh": "信创 agent 卡在 OFD 上\n一条命令读写政务版式文档",
+      "en": "Your agent is stuck on OFD\nRead and write gov fixed-layout docs in one command"
+    },
+    "sub": {
+      "zh": "ofdcli 让 agent 像读写 JSON 一样读写 GB/T 33190 OFD 政务文档 —— 单二进制、无 Office 依赖、可直接被 agent 调用。",
+      "en": "ofdcli gives your agent a JSON I/O surface for GB/T 33190 OFD government documents — single binary, no Office dependency, agent-callable."
+    },
+    "command": "ofdcli read doc.ofd --json"
+  },
+  "advantages": [
+    {
+      "title": { "zh": "Agent 直接调用", "en": "Agent-callable JSON I/O" },
+      "body": {
+        "zh": "OFD 容器里的 XML 树直接映射成结构化 JSON —— 你的 agent 读一条命令拿到页面、对象、文本，写一条命令回写 OFD。",
+        "en": "The XML tree inside an OFD container maps to structured JSON — your agent reads pages, objects, and text in one command, writes back in another."
+      },
+      "chips": ["› read → JSON", "› write → .ofd", "› info → 结构检视"]
+    },
+    {
+      "title": { "zh": "单二进制零依赖", "en": "Single binary, zero deps" },
+      "body": {
+        "zh": "编译成一个 Go 二进制 —— 不装 Office、不装 WPS、不需要运行时、不需要容器。信创环境即拷即用。",
+        "en": "Compiles to one Go binary — no Office, no WPS, no runtime, no container. Copy and run on any 信创 box."
+      },
+      "chips": ["› go install", "› 无运行时", "› 跨平台"]
+    },
+    {
+      "title": { "zh": "国标合规", "en": "GB/T 33190 compliant" },
+      "body": {
+        "zh": "OFD 是政务 mandated 的固定版式文档标准。ofdcli 按标准解析和回写 —— 你的 agent 产出的文件能进政务流转。",
+        "en": "OFD is the government-mandated fixed-layout document standard. ofdcli parses and writes per the spec — your agent's output flows through gov pipelines."
+      },
+      "chips": ["› GB/T 33190", "› 政务合规", "› 版式保真"]
+    },
+    {
+      "title": { "zh": "开源 MIT", "en": "Open source MIT" },
+      "body": {
+        "zh": "代码公开、MIT 协议、欢迎贡献。企业版提供私有化部署和团队授权。",
+        "en": "Code is public under MIT. Enterprise tier offers on-prem deployment and per-team licensing."
+      },
+      "chips": ["› MIT", "› 私有化", "› 企业版"]
+    }
+  ],
+  "scene": {
+    "kind": "hub-nodes",
+    "nodes": ["OFD.xml", "Document.xml", "Content.xml", "JSON"]
+  },
+  "cta": {
+    "headline": { "zh": "让 agent 不再卡在政务文档上", "en": "Stop letting agents stall on gov documents" },
+    "sub": { "zh": "一条命令装上，30 秒开始读写 OFD", "en": "Install in one command, read OFD in 30 seconds" },
+    "button": { "zh": "go install", "en": "go install" }
+  },
+  "footer": { "tag": { "zh": "MIT © 2026 SuperMarioYL", "en": "MIT © 2026 SuperMarioYL" } }
+}

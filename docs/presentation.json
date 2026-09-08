@@ -1,0 +1,78 @@
+{
+  "name": "ofdcli",
+  "tagline": "Read OFD documents from a command line.",
+  "architecture": {
+    "title": "How ofdcli works",
+    "nodes": [
+      {
+        "title": "OFD archive",
+        "detail": "pkg/ofd/reader.go"
+      },
+      {
+        "title": "XML parser",
+        "detail": "pkg/ofd/parser.go"
+      },
+      {
+        "title": "Document model",
+        "detail": "pkg/ofd/document.go"
+      },
+      {
+        "title": "Read / info / write",
+        "detail": "cmd/ofdcli"
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ]
+  },
+  "process": {
+    "title": "From input to a useful result",
+    "steps": [
+      {
+        "title": "Open archive",
+        "detail": "Bundled sample.ofd"
+      },
+      {
+        "title": "Resolve pages",
+        "detail": "Document XML member chain"
+      },
+      {
+        "title": "Emit JSON",
+        "detail": "Text and boundaries"
+      }
+    ],
+    "result": "The sample document produces two pages of text blocks with millimeter boundaries."
+  },
+  "integrations": {
+    "title": "Supported input and output routes",
+    "items": [
+      {
+        "title": "OFD ZIP/XML",
+        "detail": "Container and page tree input"
+      },
+      {
+        "title": "Text JSON",
+        "detail": "Text and millimeter boundaries"
+      },
+      {
+        "title": "Info report",
+        "detail": "Document/page metadata"
+      },
+      {
+        "title": "OFD output",
+        "detail": "Supported model serialization"
+      }
+    ]
+  }
+}

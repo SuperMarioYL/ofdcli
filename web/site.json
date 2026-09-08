@@ -1,64 +1,215 @@
 {
-  "schema": 1,
+  "schema": 3,
   "name": "ofdcli",
   "github": "https://github.com/SuperMarioYL/ofdcli",
   "host": "ofdcli.lei6393.com",
-  "lang": { "primary": "zh", "toggle": true },
-  "accent": ["#5E5CE6", "#7c6ff5", "#a59cf5"],
+  "palette": "auto",
+  "lang": {
+    "primary": "en",
+    "toggle": true
+  },
+  "meta": {
+    "visual_style": "neon-particle",
+    "demo_source": "docs/demo-results.json"
+  },
   "hero": {
-    "eyebrow": { "zh": "信创 · 政务版式 · 单二进制", "en": "信创 · Gov Format · Single Binary" },
     "headline": {
-      "zh": "信创 agent 卡在 OFD 上\n一条命令读写政务版式文档",
-      "en": "Your agent is stuck on OFD\nRead and write gov fixed-layout docs in one command"
+      "en": "Read OFD documents from a command line.",
+      "zh": "从命令行读取 OFD 文档。"
     },
     "sub": {
-      "zh": "ofdcli 让 agent 像读写 JSON 一样读写 GB/T 33190 OFD 政务文档 —— 单二进制、无 Office 依赖、可直接被 agent 调用。",
-      "en": "ofdcli gives your agent a JSON I/O surface for GB/T 33190 OFD government documents — single binary, no Office dependency, agent-callable."
+      "en": "ofdcli opens OFD ZIP/XML containers and exposes text blocks and page boundaries as structured JSON.",
+      "zh": "ofdcli 打开 OFD ZIP/XML 容器，将文本块与页面边界输出为结构化 JSON。"
     },
-    "command": "ofdcli read doc.ofd --json"
+    "href": "#quickstart"
   },
   "advantages": [
     {
-      "title": { "zh": "Agent 直接调用", "en": "Agent-callable JSON I/O" },
-      "body": {
-        "zh": "OFD 容器里的 XML 树直接映射成结构化 JSON —— 你的 agent 读一条命令拿到页面、对象、文本，写一条命令回写 OFD。",
-        "en": "The XML tree inside an OFD container maps to structured JSON — your agent reads pages, objects, and text in one command, writes back in another."
+      "title": {
+        "en": "JSON for scripts",
+        "zh": "面向脚本的 JSON"
       },
-      "chips": ["› read → JSON", "› write → .ofd", "› info → 结构检视"]
+      "body": {
+        "en": "Text blocks and coordinates are machine readable.",
+        "zh": "文本块和坐标可供程序读取。"
+      }
     },
     {
-      "title": { "zh": "单二进制零依赖", "en": "Single binary, zero deps" },
-      "body": {
-        "zh": "编译成一个 Go 二进制 —— 不装 Office、不装 WPS、不需要运行时、不需要容器。信创环境即拷即用。",
-        "en": "Compiles to one Go binary — no Office, no WPS, no runtime, no container. Copy and run on any 信创 box."
+      "title": {
+        "en": "Local document path",
+        "zh": "本地文档处理"
       },
-      "chips": ["› go install", "› 无运行时", "› 跨平台"]
+      "body": {
+        "en": "The CLI works directly on a local archive.",
+        "zh": "CLI 直接处理本地归档。"
+      }
     },
     {
-      "title": { "zh": "国标合规", "en": "GB/T 33190 compliant" },
-      "body": {
-        "zh": "OFD 是政务 mandated 的固定版式文档标准。ofdcli 按标准解析和回写 —— 你的 agent 产出的文件能进政务流转。",
-        "en": "OFD is the government-mandated fixed-layout document standard. ofdcli parses and writes per the spec — your agent's output flows through gov pipelines."
+      "title": {
+        "en": "One supported model",
+        "zh": "统一支持模型"
       },
-      "chips": ["› GB/T 33190", "› 政务合规", "› 版式保真"]
+      "body": {
+        "en": "Read, metadata and rewrite share document structures.",
+        "zh": "读取、元信息与回写共用文档结构。"
+      }
+    }
+  ],
+  "demo": {
+    "title": {
+      "en": "Run it on a complete example",
+      "zh": "运行完整示例"
+    },
+    "note": {
+      "en": "Run read against the complete examples/sample.ofd archive and inspect its two pages of text blocks.",
+      "zh": "对完整的 examples/sample.ofd 归档运行 read，检查两页文本块。"
+    },
+    "source": "https://github.com/SuperMarioYL/ofdcli/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": "Recorded run",
+        "body": "Read the bundled synthetic two-page OFD document into text blocks and millimeter boundaries; no viewer rendering or standards certification.",
+        "command": "go run ./cmd/ofdcli read examples/sample.ofd",
+        "output": "{\"pages\":[{\"page\":1,\"id\":\"Page_0\",\"blocks\":[{\"text\":\"关于召开项目推进会的通知\",\"boundary\":[56.7,20,96.6,40]},{\"text\":\"各有关单位：\",\"boundary\":[20,80,170,12]}]},{\"page\":2,\"id\":\"Page_1\",\"blocks\":[{\"text\":\"会议时间：2026年9月1日\",\"boundary\":[20,20,170,12]}]}]}",
+        "image": "/assets/presentation/demo-0-light.svg",
+        "imageDark": "/assets/presentation/demo-0-dark.svg"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "en": "Try it locally",
+      "zh": "本地上手"
+    },
+    "body": {
+      "en": "Run read against the complete examples/sample.ofd archive and inspect its two pages of text blocks.",
+      "zh": "对完整的 examples/sample.ofd 归档运行 read，检查两页文本块。"
+    },
+    "steps": [
+      {
+        "title": {
+          "en": "Install from source",
+          "zh": "从源码安装"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/ofdcli.git\ncd ofdcli\ngo build ./cmd/ofdcli"
+      },
+      {
+        "title": {
+          "en": "Run the included example",
+          "zh": "运行随仓示例"
+        },
+        "code": "go run ./cmd/ofdcli read examples/sample.ofd"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "en": "Rewriting preserves the supported model, not every resource or visual detail in arbitrary OFD files. Keep the original and validate rewritten documents with your viewer.",
+      "zh": "回写保留的是支持的模型，不保证任意 OFD 的全部资源与视觉细节。请保留原件，并用实际查看器验证输出。"
     },
     {
-      "title": { "zh": "开源 MIT", "en": "Open source MIT" },
-      "body": {
-        "zh": "代码公开、MIT 协议、欢迎贡献。企业版提供私有化部署和团队授权。",
-        "en": "Code is public under MIT. Enterprise tier offers on-prem deployment and per-team licensing."
-      },
-      "chips": ["› MIT", "› 私有化", "› 企业版"]
+      "en": "The sample is a synthetic document; successful parsing is not standards certification or legal validation.",
+      "zh": "样例为合成文档；解析成功不等于标准认证或法律有效性验证。"
+    },
+    {
+      "en": "Template generation, electronic seals and the planned validate command are not implemented here.",
+      "zh": "模板生成、电子签章和计划中的 validate 命令尚未实现。"
     }
   ],
   "scene": {
-    "kind": "hub-nodes",
-    "nodes": ["OFD.xml", "Document.xml", "Content.xml", "JSON"]
+    "kind": "neon-graph",
+    "fallback": "/assets/presentation/scene-dark.svg",
+    "fallbackLight": "/assets/presentation/scene-light.svg"
   },
-  "cta": {
-    "headline": { "zh": "让 agent 不再卡在政务文档上", "en": "Stop letting agents stall on gov documents" },
-    "sub": { "zh": "一条命令装上，30 秒开始读写 OFD", "en": "Install in one command, read OFD in 30 seconds" },
-    "button": { "zh": "go install", "en": "go install" }
-  },
-  "footer": { "tag": { "zh": "MIT © 2026 SuperMarioYL", "en": "MIT © 2026 SuperMarioYL" } }
+  "story": {
+    "intro": {
+      "title": {
+        "en": "A concrete task",
+        "zh": "从实际任务出发"
+      },
+      "body": {
+        "en": "Automation needs document text and layout coordinates without opening an office application. A small CLI gives scripts a predictable input path and machine-readable result.",
+        "zh": "自动化通常需要文档文字和布局坐标，而不必打开办公应用。小型 CLI 为脚本提供明确输入路径与机器可读结果。"
+      }
+    },
+    "sections": [
+      {
+        "title": {
+          "en": "Follow the operation",
+          "zh": "处理过程"
+        },
+        "body": {
+          "en": "The reader opens the archive, resolves the OFD manifest and document/page XML chain, then constructs an OfdDocument. read projects text blocks to JSON; info summarizes structure; write serializes the supported model back into an OFD archive.",
+          "zh": "读取器打开归档，沿 OFD 清单、文档和页面 XML 建立 OfdDocument。read 将文本块投影成 JSON，info 汇总结构，write 将已支持的模型重新写成 OFD 容器。"
+        },
+        "image": {
+          "light": "/assets/presentation/process-light.svg",
+          "dark": "/assets/presentation/process-dark.svg",
+          "alt": {
+            "en": "Follow the operation",
+            "zh": "处理过程"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "How ofdcli works",
+          "zh": "ofdcli 的工作方式"
+        },
+        "body": {
+          "en": "The reader opens the archive, resolves the OFD manifest and document/page XML chain, then constructs an OfdDocument. read projects text blocks to JSON; info summarizes structure; write serializes the supported model back into an OFD archive.",
+          "zh": "读取器打开归档，沿 OFD 清单、文档和页面 XML 建立 OfdDocument。read 将文本块投影成 JSON，info 汇总结构，write 将已支持的模型重新写成 OFD 容器。"
+        },
+        "image": {
+          "light": "/assets/presentation/architecture-light.svg",
+          "dark": "/assets/presentation/architecture-dark.svg",
+          "alt": {
+            "en": "How ofdcli works",
+            "zh": "ofdcli 的工作方式"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "Connect the pieces",
+          "zh": "输入与输出"
+        },
+        "body": {
+          "en": "The following routes are implemented in the source. Choose the input that matches your task and keep the resulting artifact with your project.",
+          "zh": "以下路径已有源码实现。按任务选择输入，并把生成的结果与项目一起保存。"
+        },
+        "image": {
+          "light": "/assets/presentation/integrations-light.svg",
+          "dark": "/assets/presentation/integrations-dark.svg",
+          "alt": {
+            "en": "Connect the pieces",
+            "zh": "输入与输出"
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "en": "Configuration",
+          "zh": "配置"
+        },
+        "body": {
+          "en": "read takes an OFD path and optional --pretty. info supports --members/-m for archive members. write requires --input/-i and --output/-o; choose a distinct destination to keep the source intact. No daemon or office installation is needed.",
+          "zh": "read 接收 OFD 路径和可选 --pretty；info 可用 --members/-m 查看归档成员；write 必须提供 --input/-i 与 --output/-o，建议使用不同输出路径保留原件。无需守护进程或办公软件。"
+        }
+      },
+      {
+        "title": {
+          "en": "Further use",
+          "zh": "进一步使用"
+        },
+        "body": {
+          "en": "The CLI exposes the following operations. Commands after the example use your own paths or identifiers.",
+          "zh": "CLI 提供以下操作。示例之外的命令需要替换成你的文件路径或标识。"
+        },
+        "code": "go run ./cmd/ofdcli read examples/sample.ofd --pretty\ngo run ./cmd/ofdcli info examples/sample.ofd\ngo run ./cmd/ofdcli write -i examples/sample.ofd -o sample.normalized.ofd"
+      }
+    ]
+  }
 }

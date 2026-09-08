@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "e67156-e7c36a-f6acba-f138d8ca83c9",
+  "identity": "https://github.com/supermarioyl/ofdcli",
+  "primary": "#e67156",
+  "secondary": "#e7c36a",
+  "highlight": "#f6acba",
+  "dark": {
+    "bg": "#0a080d",
+    "panel": "#131117",
+    "code": "#140e13",
+    "ink": "#fdeef1",
+    "muted": "#b2a2a8",
+    "line": "#3a1f1d",
+    "primary": "#e67156",
+    "secondary": "#e7c36a",
+    "highlight": "#f6acba",
+    "accent": "#e67156",
+    "buttonStart": "#b95b45",
+    "buttonEnd": "#8a743f",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#fefaf9",
+    "panel": "#fef8f7",
+    "code": "#fdf5f3",
+    "ink": "#27191c",
+    "muted": "#72636b",
+    "line": "#f7d4cb",
+    "primary": "#b25743",
+    "secondary": "#846f3d",
+    "highlight": "#91666e",
+    "accent": "#b25743",
+    "buttonStart": "#b95b45",
+    "buttonEnd": "#8a743f",
+    "buttonText": "#ffffff"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "source_revision": "63a6c7e8749f09e2d89a1a94da2808e9b842fc8a",
+  "scope": "Read the bundled synthetic two-page OFD document into text blocks and millimeter boundaries; no viewer rendering or standards certification.",
+  "steps": [
+    {
+      "label": "Recorded run",
+      "body": "Read the bundled synthetic two-page OFD document into text blocks and millimeter boundaries; no viewer rendering or standards certification.",
+      "command": "go run ./cmd/ofdcli read examples/sample.ofd",
+      "output": "{\"pages\":[{\"page\":1,\"id\":\"Page_0\",\"blocks\":[{\"text\":\"关于召开项目推进会的通知\",\"boundary\":[56.7,20,96.6,40]},{\"text\":\"各有关单位：\",\"boundary\":[20,80,170,12]}]},{\"page\":2,\"id\":\"Page_1\",\"blocks\":[{\"text\":\"会议时间：2026年9月1日\",\"boundary\":[20,20,170,12]}]}]}"
+    }
+  ]
+}

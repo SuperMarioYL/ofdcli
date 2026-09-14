@@ -32,6 +32,38 @@ func writeFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+// zipEntry is one member of a fixture archive built by buildZip.
+type zipEntry struct {
+	name string
+	data []byte
+}
+
+// buildZip writes a zip archive with the given members, in order, and returns
+// its path. OFD.xml should come first, mirroring real producers.
+func buildZip(t *testing.T, entries []zipEntry) string {
+	t.Helper()
+	dst := filepath.Join(t.TempDir(), "fixture.ofd")
+	out, err := os.Create(dst)
+	if err != nil {
+		t.Fatalf("create fixture: %v", err)
+	}
+	defer out.Close()
+	zw := zip.NewWriter(out)
+	for _, e := range entries {
+		w, err := zw.Create(e.name)
+		if err != nil {
+			t.Fatalf("create member %q: %v", e.name, err)
+		}
+		if _, err := w.Write(e.data); err != nil {
+			t.Fatalf("write member %q: %v", e.name, err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close fixture: %v", err)
+	}
+	return dst
+}
+
 // zipDir writes every file under srcRoot into a zip at dstPath, preserving
 // the relative path within srcRoot as the member name.
 func zipDir(srcRoot, dstPath string) error {

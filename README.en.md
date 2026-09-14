@@ -106,7 +106,7 @@ The following routes are implemented in the source. Choose the input that matche
 
 ## Limits and next steps
 
-- Rewriting preserves the supported model, not every resource or visual detail in arbitrary OFD files. Keep the original and validate rewritten documents with your viewer.
+- Rewriting re-serializes the supported model objects and carries unmodeled archive members (Res/ fonts, images, attachments) over verbatim, so ResourceID references stay resolvable; full visual fidelity of arbitrary OFD files is not guaranteed. Keep the original and validate rewritten documents with your viewer.
 - The sample is a synthetic document; successful parsing is not standards certification or legal validation.
 - Template generation, electronic seals and the planned validate command are not implemented here.
 

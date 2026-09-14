@@ -12,8 +12,10 @@ import (
 //
 // m1 scope: read an OFD document and re-emit it through the writer, producing
 // a GB/T 33190-compliant, structurally-normalised container that round-trips
-// through `ofdcli read`. Template-driven generation from arbitrary JSON input
-// (--template / --data) is the m2 milestone and is intentionally not wired here.
+// through `ofdcli read`; unmodeled members (Res/ fonts, images, attachments)
+// are carried over from the source verbatim. Template-driven generation from
+// arbitrary JSON input (--template / --data) is the m2 milestone and is
+// intentionally not wired here.
 var writeCmd = &cobra.Command{
 	Use:   "write -i <input.ofd> -o <output.ofd>",
 	Short: "写出 OFD 版式文档（m1: 读入-回写规范化）",
@@ -41,7 +43,10 @@ m2（路线图）：基于模板从结构化 JSON 生成新版式文档。
 		if err != nil {
 			return err
 		}
-		if err := ofd.Write(out, doc); err != nil {
+		// WritePreserving re-emits the modelled tree and copies every
+		// unmodeled member (Res/ fonts, images, attachments) from the source
+		// verbatim, so resource references stay resolvable in the copy.
+		if err := ofd.WritePreserving(out, doc, c); err != nil {
 			return err
 		}
 		fmt.Printf("OK %s (GB/T 33190, %d pages)\n", out, doc.PageCount())

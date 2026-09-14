@@ -54,6 +54,16 @@ func buildPage(ref pageRefXML, px *pageXML) (Page, error) {
 			return Page{}, fmt.Errorf("ofd: page %q area: %w", p.ID, err)
 		}
 		p.Area = &box
+	} else if ref.Area != "" {
+		// The producer declared the page geometry on the <Page> element in
+		// Document.xml (PageArea/PhysicalBox) and Content.xml carries no
+		// <Area> of its own; use that declaration instead of reporting no
+		// page size at all.
+		box, err := parseBox(ref.Area)
+		if err != nil {
+			return Page{}, fmt.Errorf("ofd: page %q area: %w", p.ID, err)
+		}
+		p.Area = &box
 	}
 	if px.Content != nil {
 		layers := make([]Layer, 0, len(px.Content.Layers))

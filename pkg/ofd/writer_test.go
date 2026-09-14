@@ -149,6 +149,52 @@ func TestWrite_NilDocumentErrors(t *testing.T) {
 	}
 }
 
+// TestWrite_DefaultsPageIdentity is the regression test for the v0.1.0 defect
+// where writeDocumentXML and writePageContent computed two different default
+// Content.xml locations for a page with no ID/BaseLoc (manifest said
+// Pages/Page_0/Content.xml, the member was written at Pages/Content.xml), so
+// the writer's own output could not be read back.
+func TestWrite_DefaultsPageIdentity(t *testing.T) {
+	doc := &OfdDocument{
+		Pages: []Page{{
+			Area: &Box{X: 0, Y: 0, W: 210, H: 297},
+			Layers: []Layer{{
+				ID:   "Layer_0",
+				Type: "Body",
+				TextObjects: []TextObject{
+					{ID: "Text_0", Box: Box{X: 10, Y: 10, W: 50, H: 8}, Text: "hello"},
+				},
+			}},
+		}},
+	}
+	out := t.TempDir() + "/defaults.ofd"
+	if err := Write(out, doc); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	back, err := Open(out)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer back.Close()
+	rd, err := back.Read()
+	if err != nil {
+		t.Fatalf("re-read written defaults (v0.1.0 failed here with 'member not found'): %v", err)
+	}
+	if rd.PageCount() != 1 {
+		t.Fatalf("page count = %d, want 1", rd.PageCount())
+	}
+	if rd.Pages[0].ID != "Page_0" {
+		t.Fatalf("defaulted page ID = %q, want Page_0", rd.Pages[0].ID)
+	}
+	if rd.Pages[0].Area == nil || rd.Pages[0].Area.W != 210 {
+		t.Fatalf("page area = %+v, want W=210", rd.Pages[0].Area)
+	}
+	if got := rd.Pages[0].Layers[0].TextObjects[0].Text; got != "hello" {
+		t.Fatalf("text round-trip = %q, want %q", got, "hello")
+	}
+}
+
 func TestWrite_EmptyDocumentIsReadable(t *testing.T) {
 	// A programmatically-constructed empty document still round-trips through
 	// the read path, validating the writer's defaulting for missing fields.

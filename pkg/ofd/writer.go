@@ -21,7 +21,28 @@ import (
 // enough to round-trip a read document and to author a model programmatically.
 
 // Write serialises a document model into an OFD container at outPath.
+// Only the modelled members (OFD.xml, Document.xml, page Content.xml files)
+// are written; use WritePreserving to also carry unmodeled members from a
+// source container.
 func Write(outPath string, doc *OfdDocument) error {
+	return writeArchive(outPath, doc, nil)
+}
+
+// WritePreserving serialises a document model like Write and additionally
+// copies every unmodeled archive member from src — Res/ fonts and images,
+// attachments, custom parts — verbatim, so a read-then-write round-trip keeps
+// resource references (e.g. ImageObject ResourceID) resolvable by reference
+// viewers.
+func WritePreserving(outPath string, doc *OfdDocument, src *Container) error {
+	if src == nil {
+		return fmt.Errorf("ofd: write: nil source container")
+	}
+	return writeArchive(outPath, doc, src)
+}
+
+// writeArchive writes doc's modelled members and, when src is non-nil, every
+// unmodeled member from src.
+func writeArchive(outPath string, doc *OfdDocument, src *Container) error {
 	if doc == nil {
 		return fmt.Errorf("ofd: write: nil document")
 	}
@@ -34,6 +55,7 @@ func Write(outPath string, doc *OfdDocument) error {
 		docRoot = "Doc_0/Document.xml"
 	}
 	dir := docDir(docRoot)
+	refs := pageRefs(doc, docRoot)
 
 	f, err := os.Create(outPath)
 	if err != nil {
@@ -45,16 +67,86 @@ func Write(outPath string, doc *OfdDocument) error {
 	if err := writeOFDManifest(zw, doc, docRoot); err != nil {
 		return err
 	}
-	if err := writeDocumentXML(zw, doc, docRoot); err != nil {
+	if err := writeDocumentXML(zw, doc, docRoot, refs); err != nil {
 		return err
 	}
 	for i := range doc.Pages {
-		if err := writePageContent(zw, dir, &doc.Pages[i]); err != nil {
+		if err := writePageContent(zw, dir, refs[i], &doc.Pages[i]); err != nil {
+			return err
+		}
+	}
+	if src != nil {
+		if err := copyUnmodeledMembers(zw, src, modeledMemberNames(dir, docRoot, refs)); err != nil {
 			return err
 		}
 	}
 	if err := zw.Close(); err != nil {
 		return fmt.Errorf("ofd: close archive: %w", err)
+	}
+	return nil
+}
+
+// pageRefs resolves every page's manifest entry up front: the effective
+// Content.xml location (the model's BaseLoc, or the writer's default),
+// normalised to be relative to the Doc directory. Both the Document.xml
+// manifest and the archive's content members are derived from these refs, so
+// the two can never disagree on where a page's content lives.
+func pageRefs(doc *OfdDocument, docRoot string) []pageRefXML {
+	refs := make([]pageRefXML, 0, len(doc.Pages))
+	for i := range doc.Pages {
+		p := &doc.Pages[i]
+		refs = append(refs, pageRefXML{
+			ID:      nonEmpty(p.ID, pageID(i)),
+			BaseLoc: relToDocDir(effectiveBaseLoc(p, i), docRoot),
+		})
+	}
+	return refs
+}
+
+// effectiveBaseLoc returns the page's content path: the model's BaseLoc when
+// set, else the default Pages/<ID>/Content.xml location (with the page index
+// standing in for a missing ID).
+func effectiveBaseLoc(p *Page, i int) string {
+	if p.BaseLoc != "" {
+		return p.BaseLoc
+	}
+	return path.Join("Pages", nonEmpty(p.ID, pageID(i)), "Content.xml")
+}
+
+// modeledMemberNames lists the archive members writeArchive itself emits, so
+// copyUnmodeledMembers never duplicates them.
+func modeledMemberNames(dir, docRoot string, refs []pageRefXML) map[string]bool {
+	names := map[string]bool{
+		"OFD.xml": true,
+		docRoot:   true,
+	}
+	for _, ref := range refs {
+		names[path.Join(dir, ref.BaseLoc)] = true
+	}
+	return names
+}
+
+// copyUnmodeledMembers copies every src member whose name is not in the
+// modeled set, preserving the original file header (name, method, mtime).
+func copyUnmodeledMembers(zw *zip.Writer, src *Container, modeled map[string]bool) error {
+	for _, f := range src.reader.Reader.File {
+		if modeled[f.Name] {
+			continue
+		}
+		hdr := f.FileHeader
+		w, err := zw.CreateHeader(&hdr)
+		if err != nil {
+			return fmt.Errorf("ofd: copy member %q: %w", f.Name, err)
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("ofd: open member %q: %w", f.Name, err)
+		}
+		_, err = io.Copy(w, rc)
+		rc.Close()
+		if err != nil {
+			return fmt.Errorf("ofd: copy member %q: %w", f.Name, err)
+		}
 	}
 	return nil
 }
@@ -81,42 +173,27 @@ func writeOFDManifest(zw *zip.Writer, doc *OfdDocument, docRoot string) error {
 }
 
 // writeDocumentXML writes Doc_N/Document.xml — the per-document structural root
-// with the page list (each pointing at its Content.xml).
-func writeDocumentXML(zw *zip.Writer, doc *OfdDocument, docRoot string) error {
+// with the page list (each pointing at its Content.xml). The page refs are the
+// ones resolved by pageRefs, i.e. the same locations the content members are
+// written to.
+func writeDocumentXML(zw *zip.Writer, doc *OfdDocument, docRoot string, refs []pageRefXML) error {
 	dx := documentXML{
 		Common: &commonXML{
 			PageArea: &pageAreaXML{
 				PhysicalBox: formatBox(doc.Common.PhysicalBox),
 			},
 		},
-		Pages: make([]pageRefXML, 0, len(doc.Pages)),
-	}
-	for i := range doc.Pages {
-		p := &doc.Pages[i]
-		baseLoc := p.BaseLoc
-		if baseLoc == "" {
-			baseLoc = path.Join("Pages", pageID(i), "Content.xml")
-		}
-		// Strip the Doc dir prefix if the caller stored a full path in BaseLoc,
-		// so the manifest stays consistent with the writer's content-member layout.
-		baseLoc = relToDocDir(baseLoc, docRoot)
-		dx.Pages = append(dx.Pages, pageRefXML{
-			ID:      nonEmpty(p.ID, pageID(i)),
-			BaseLoc: baseLoc,
-		})
+		Pages: refs,
 	}
 	return writeXMLMember(zw, docRoot, &dx)
 }
 
-// writePageContent writes one page's Content.xml at <docDir>/<BaseLoc>.
-func writePageContent(zw *zip.Writer, dir string, p *Page) error {
-	contentPath := p.BaseLoc
-	if contentPath == "" {
-		contentPath = path.Join("Pages", p.ID, "Content.xml")
-	}
-	contentPath = path.Join(dir, relToDocDir(contentPath, dir+"Document.xml"))
+// writePageContent writes one page's Content.xml at the resolved member path
+// (dir + ref.BaseLoc) — exactly the location the manifest's BaseLoc points at.
+func writePageContent(zw *zip.Writer, dir string, ref pageRefXML, p *Page) error {
+	contentPath := path.Join(dir, ref.BaseLoc)
 
-	px := pageXML{ID: p.ID}
+	px := pageXML{ID: ref.ID}
 	if p.Area != nil {
 		px.Area = &areaXML{Boundary: formatBox(*p.Area)}
 	}

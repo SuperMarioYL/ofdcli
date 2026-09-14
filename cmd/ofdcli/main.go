@@ -13,7 +13,7 @@ import (
 // version is the single source for `ofdcli --version`. The release tag is
 // derived from the repo-root VERSION file by publish tooling; this constant
 // keeps the binary self-describing between releases.
-const version = "0.1.0"
+const version = "0.2.0"
 
 const longDesc = `ofdcli — 信创 agent 的 OFD (GB/T 33190) 政务版式文档读写 CLI
 

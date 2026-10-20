@@ -104,8 +104,8 @@
   },
   "limitations": [
     {
-      "en": "Rewriting re-serializes the supported model objects and carries unmodeled archive members (Res/ fonts, images, attachments) over verbatim, so ResourceID references stay resolvable; full visual fidelity of arbitrary OFD files is not guaranteed. Keep the original and validate rewritten documents with your viewer.",
-      "zh": "回写重新序列化支持的模型对象，并原样保留未建模的归档成员（Res/ 字体、图片、附件等资源），ResourceID 引用在输出中仍然可解析；不保证任意 OFD 的全部视觉细节。请保留原件，并用实际查看器验证输出。"
+      "en": "Since v0.3.0, writing refuses an output path that resolves to the input file (pick a different -o path), and rewritten documents carry the standard's CommonData page-area element. Rewriting still re-serializes the supported model objects and copies unmodeled archive members (Res/ fonts, images, attachments) over verbatim, so ResourceID references stay resolvable; full visual fidelity of arbitrary OFD files is not guaranteed. Keep the original and validate rewritten documents with your viewer.",
+      "zh": "自 v0.3.0 起，回写会拒绝与输入相同路径的输出（请另选 -o 路径），并按标准输出 CommonData 页面区域元素。回写仍然重新序列化支持的模型对象，并原样保留未建模的归档成员（Res/ 字体、图片、附件等资源），ResourceID 引用在输出中仍然可解析；不保证任意 OFD 的全部视觉细节。请保留原件，并用实际查看器验证输出。"
     },
     {
       "en": "The sample is a synthetic document; successful parsing is not standards certification or legal validation.",

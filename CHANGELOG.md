@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+### Fixed
+
+- `ofdcli write -i X.ofd -o X.ofd` no longer destroys the input: the writer
+  refuses a source and output that resolve to the same file before any file is
+  touched. Previously `os.Create` truncated the still-open source archive
+  mid-command — the command failed with "ofd: open member ...: EOF" and the
+  document was left at 0 bytes.
+- The `Document.xml` page-area default is now read from the standard's
+  `<CommonData>` element (GB/T 33190 CT_CommonData). Previously the reader
+  matched only the non-compliant `<Common>` name ofdcli itself wrote, so
+  compliant producers' default page area was silently dropped (`ofdcli info`
+  printed no page size), and the writer emitted `<Common>` plus a fabricated
+  `<PhysicalBox>0 0 0 0</PhysicalBox>` and an empty `<PageArea></PageArea>`
+  on every page. Archives written by older ofdcli versions still read via a
+  legacy fallback; the writer now emits only the compliant form, and only
+  when the model carries a box.
+- The container manifest is resolved case-insensitively on read, so an
+  `OFD.XML` archive no longer passes `ofdcli`'s own recognition gate and then
+  fails with "member \"OFD.xml\" not found in archive".
+
+
 ## [0.2.0] - 2026-09-15
 
 ### Fixed
@@ -42,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ofdcli write` — read an OFD and re-emit it as a structurally normalised,
   GB/T 33190-compliant container.
 
-[Unreleased]: https://github.com/SuperMarioYL/ofdcli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/SuperMarioYL/ofdcli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.2.0
 [0.1.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.1.0

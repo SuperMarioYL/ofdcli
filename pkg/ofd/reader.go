@@ -56,8 +56,15 @@ func (c *Container) Read() (*OfdDocument, error) {
 			ModDate:      body.DocInfo.ModDate,
 		}
 	}
-	if docXML.Common != nil && docXML.Common.PageArea != nil {
-		box, err := parseBox(docXML.Common.PageArea.PhysicalBox)
+	// GB/T 33190 carries the page-area default under CommonData; archives
+	// written by ofdcli v0.1/v0.2 used the non-compliant <Common> name and
+	// are still read through the legacy fallback.
+	common := docXML.Common
+	if common == nil {
+		common = docXML.CommonLegacy
+	}
+	if common != nil && common.PageArea != nil {
+		box, err := parseBox(common.PageArea.PhysicalBox)
 		if err == nil {
 			doc.Common.PhysicalBox = box
 		}
@@ -75,9 +82,19 @@ func (c *Container) Read() (*OfdDocument, error) {
 	return doc, nil
 }
 
-// readManifest unmarshals the OFD.xml container manifest.
+// readManifest unmarshals the OFD.xml container manifest. The manifest member
+// is resolved case-insensitively on an exact miss: IsOFD already accepts any
+// casing of OFD.xml, so Read must agree with its own recognition gate (an
+// OFD.XML archive used to fail with "member \"OFD.xml\" not found").
 func (c *Container) readManifest() (*ofdXML, error) {
-	raw, err := c.readMember("OFD.xml")
+	const manifest = "OFD.xml"
+	name := manifest
+	if _, err := c.readMember(name); err != nil {
+		if alt, ok := c.memberNameFold(manifest); ok {
+			name = alt
+		}
+	}
+	raw, err := c.readMember(name)
 	if err != nil {
 		return nil, fmt.Errorf("ofd: read OFD.xml: %w", err)
 	}

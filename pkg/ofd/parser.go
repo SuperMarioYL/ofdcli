@@ -64,6 +64,18 @@ func (c *Container) readMember(name string) ([]byte, error) {
 	return nil, fmt.Errorf("ofd: member %q not found in archive", name)
 }
 
+// memberNameFold returns the archive's actual member name matching name
+// case-insensitively. Used for manifest tolerance only — page BaseLoc paths
+// stay exact per GB/T 33190.
+func (c *Container) memberNameFold(name string) (string, bool) {
+	for _, f := range c.reader.Reader.File {
+		if strings.EqualFold(f.Name, name) {
+			return f.Name, true
+		}
+	}
+	return "", false
+}
+
 // readZipFile reads the full contents of one zip file descriptor.
 func readZipFile(f *zip.File) ([]byte, error) {
 	rc, err := f.Open()

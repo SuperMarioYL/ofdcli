@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -32,6 +33,13 @@ m2（路线图）：基于模板从结构化 JSON 生成新版式文档。
 		if in == "" || out == "" {
 			return fmt.Errorf("both --input (-i) and --output (-o) are required")
 		}
+		// Writing over the still-open input destroys it (reproduced at
+		// v0.2.0: the file was left at 0 bytes and the command failed) —
+		// reject the obvious same-path invocation up front. The library's
+		// writeArchive guards the remaining cases (symlinks, hardlinks).
+		if samePath(in, out) {
+			return fmt.Errorf("--input and --output are the same file (%q); write to a different path", in)
+		}
 
 		c, err := ofd.Open(in)
 		if err != nil {
@@ -57,4 +65,18 @@ m2（路线图）：基于模板从结构化 JSON 生成新版式文档。
 func init() {
 	writeCmd.Flags().StringP("input", "i", "", "input OFD file to read and normalise")
 	writeCmd.Flags().StringP("output", "o", "", "output OFD file to write")
+}
+
+// samePath reports whether two flag values resolve to the same filesystem
+// path (absolute, cleaned compare).
+func samePath(a, b string) bool {
+	aa, err := filepath.Abs(a)
+	if err != nil {
+		return false
+	}
+	ba, err := filepath.Abs(b)
+	if err != nil {
+		return false
+	}
+	return filepath.Clean(aa) == filepath.Clean(ba)
 }

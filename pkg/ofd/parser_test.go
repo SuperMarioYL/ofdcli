@@ -174,3 +174,41 @@ func openSample(t *testing.T) *Container {
 	}
 	return c
 }
+
+// TestRead_ManifestCasingInsensitive is the regression test for the v0.2.0
+// defect where IsOFD matched the manifest case-insensitively (EqualFold) but
+// readManifest required the exact name "OFD.xml", so an OFD.XML archive was
+// recognised by ofdcli's own gate and then rejected with
+// "member \"OFD.xml\" not found in archive".
+func TestRead_ManifestCasingInsensitive(t *testing.T) {
+	entries := []zipEntry{
+		{name: "OFD.XML", data: []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<ofd:OFD xmlns:ofd="http://www.ofdspec.org/2016" DocType="OFD" Version="1.1">
+  <ofd:DocBody><ofd:DocRoot>Doc_0/Document.xml</ofd:DocRoot></ofd:DocBody>
+</ofd:OFD>
+`)},
+		{name: "Doc_0/Document.xml", data: []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Document xmlns:ofd="http://www.ofdspec.org/2016" ID="Doc_0">
+  <ofd:Pages><ofd:Page ID="Page_0" BaseLoc="Pages/Page_0/Content.xml"/></ofd:Pages>
+</ofd:Document>
+`)},
+		{name: "Doc_0/Pages/Page_0/Content.xml", data: []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Page xmlns:ofd="http://www.ofdspec.org/2016" ID="Page_0"><ofd:Content/></ofd:Page>
+`)},
+	}
+	c, err := Open(buildZip(t, entries))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer c.Close()
+	if !c.IsOFD() {
+		t.Fatalf("IsOFD = false on an OFD.XML manifest, want true")
+	}
+	doc, err := c.Read()
+	if err != nil {
+		t.Fatalf("REPRODUCED (v0.2.0 rejected the manifest IsOFD accepted): Read on OFD.XML: %v", err)
+	}
+	if doc.PageCount() != 1 {
+		t.Fatalf("page count = %d, want 1", doc.PageCount())
+	}
+}

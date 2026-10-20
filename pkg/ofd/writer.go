@@ -57,6 +57,14 @@ func writeArchive(outPath string, doc *OfdDocument, src *Container) error {
 	dir := docDir(docRoot)
 	refs := pageRefs(doc, docRoot)
 
+	// The source container is still an open zip reader on its own path: creating
+	// outPath at that path would truncate the file this call is about to read
+	// member data from, destroying the caller's input. Refuse before any file
+	// is touched (reproduced at v0.2.0: `write -i X -o X` left X at 0 bytes).
+	if src != nil && sameFile(src.Path(), outPath) {
+		return fmt.Errorf("ofd: write: input and output are the same file (%q); write to a different path", outPath)
+	}
+
 	f, err := os.Create(outPath)
 	if err != nil {
 		return fmt.Errorf("ofd: create %q: %w", outPath, err)
@@ -175,15 +183,17 @@ func writeOFDManifest(zw *zip.Writer, doc *OfdDocument, docRoot string) error {
 // writeDocumentXML writes Doc_N/Document.xml — the per-document structural root
 // with the page list (each pointing at its Content.xml). The page refs are the
 // ones resolved by pageRefs, i.e. the same locations the content members are
-// written to.
+// written to. The page-area default is serialised under the standard's
+// CommonData element (GB/T 33190 CT_CommonData) and only when the model
+// actually carries one — a fabricated "0 0 0 0" box is never emitted.
 func writeDocumentXML(zw *zip.Writer, doc *OfdDocument, docRoot string, refs []pageRefXML) error {
-	dx := documentXML{
-		Common: &commonXML{
+	dx := documentXML{Pages: refs}
+	if doc.Common.PhysicalBox.W != 0 || doc.Common.PhysicalBox.H != 0 {
+		dx.Common = &commonXML{
 			PageArea: &pageAreaXML{
 				PhysicalBox: formatBox(doc.Common.PhysicalBox),
 			},
-		},
-		Pages: refs,
+		}
 	}
 	return writeXMLMember(zw, docRoot, &dx)
 }
@@ -272,4 +282,17 @@ func nonEmpty(a, b string) string {
 		return a
 	}
 	return b
+}
+
+// sameFile reports whether two paths refer to the same on-disk file. A path
+// that does not exist (yet) is never the same as an existing one; for existing
+// paths the os.SameFile inode comparison covers symlinks and differing textual
+// forms of one file.
+func sameFile(a, b string) bool {
+	fa, err1 := os.Stat(a)
+	fb, err2 := os.Stat(b)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return os.SameFile(fa, fb)
 }

@@ -44,11 +44,19 @@ type docInfoXML struct {
 }
 
 // documentXML is Doc_N/Document.xml — the per-document structural root.
+//
+// GB/T 33190 names the page-area-defaults element CommonData (CT_CommonData);
+// ofdcli v0.1/v0.2 read and wrote the non-compliant name <Common>, so the
+// CommonLegacy field tolerates those archives on read (it is never written —
+// the writer always emits the compliant CommonData form).
 type documentXML struct {
-	XMLName xml.Name `xml:"http://www.ofdspec.org/2016 Document"`
-	ID      string   `xml:"ID,attr,omitempty"`
-	Common  *commonXML `xml:"Common"`
-	Pages   []pageRefXML `xml:"Pages>Page"`
+	XMLName xml.Name   `xml:"http://www.ofdspec.org/2016 Document"`
+	ID      string     `xml:"ID,attr,omitempty"`
+	Common  *commonXML `xml:"CommonData"`
+	// CommonLegacy is a read-only fallback for the pre-v0.3 non-compliant
+	// <Common> element; only consulted when CommonData is absent.
+	CommonLegacy *commonXML   `xml:"Common,omitempty"`
+	Pages        []pageRefXML `xml:"Pages>Page"`
 }
 
 // commonXML holds page-area defaults shared across the document's pages.
@@ -64,11 +72,15 @@ type pageAreaXML struct {
 }
 
 // pageRefXML is a <Page> entry inside Document.xml/Pages. BaseLoc is the
-// content path relative to the enclosing Doc_N/ directory.
+// content path relative to the enclosing Doc_N/ directory. Area carries the
+// optional page-level PageArea declaration; it is a pointer so the writer
+// omits the element entirely for refs that have none (encoding/xml ignores
+// omitempty on nested element paths, which used to emit an empty
+// <PageArea></PageArea> on every written Page).
 type pageRefXML struct {
-	ID      string `xml:"ID,attr,omitempty"`
-	BaseLoc string `xml:"BaseLoc,attr,omitempty"`
-	Area    string `xml:"PageArea>PhysicalBox,omitempty"`
+	ID      string       `xml:"ID,attr,omitempty"`
+	BaseLoc string       `xml:"BaseLoc,attr,omitempty"`
+	Area    *pageAreaXML `xml:"PageArea,omitempty"`
 }
 
 // pageXML is a page's Content.xml: the page area + a content tree of layers.

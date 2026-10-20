@@ -1,6 +1,8 @@
 package ofd
 
 import (
+	"bytes"
+	"os"
 	"testing"
 )
 
@@ -214,5 +216,38 @@ func TestWrite_EmptyDocumentIsReadable(t *testing.T) {
 	}
 	if rd.PageCount() != 0 {
 		t.Fatalf("empty doc page count = %d, want 0", rd.PageCount())
+	}
+}
+
+// TestWritePreserving_InPlaceRejected is the regression test for the v0.2.0
+// defect where `ofdcli write -i X.ofd -o X.ofd` truncated the still-open
+// source archive with os.Create before copyUnmodeledMembers read from it:
+// the command failed with "ofd: open member ...: EOF" and the input was left
+// at 0 bytes. The same-file invocation must be refused before any file is
+// touched.
+func TestWritePreserving_InPlaceRejected(t *testing.T) {
+	c := openSample(t)
+	defer c.Close()
+
+	doc, err := c.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	p := c.Path()
+	before, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("read input: %v", err)
+	}
+
+	if err := WritePreserving(p, doc, c); err == nil {
+		t.Fatalf("WritePreserving onto its own source container returned nil error, want same-file error")
+	}
+
+	after, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("re-read input: %v", err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatalf("REPRODUCED (v0.2.0 truncated the input to 0 bytes): input was modified by the rejected write, %d -> %d bytes", len(before), len(after))
 	}
 }

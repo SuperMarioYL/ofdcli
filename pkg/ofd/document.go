@@ -38,9 +38,18 @@ type DocInfo struct {
 	ModDate      string
 }
 
-// Common is the document's shared CT_PageArea defaults.
+// Common is the document's shared CT_CommonData defaults.
 type Common struct {
-	PhysicalBox Box // default page physical box (mm)
+	PhysicalBox Box          // default page physical box (mm)
+	PublicRes   *ResourceRef // public resource map (fonts, colour spaces), nil when undeclared
+	DocumentRes *ResourceRef // document resource map (media/images), nil when undeclared
+}
+
+// ResourceRef points at a resource-map member (PublicRes.xml / DocumentRes.xml)
+// declared under CommonData. BaseLoc is relative to the Doc directory.
+type ResourceRef struct {
+	ID      string
+	BaseLoc string
 }
 
 // Box is an "x y w h" boundary box in millimetres (the OFD default unit).

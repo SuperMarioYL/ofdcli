@@ -63,11 +63,18 @@ func (c *Container) Read() (*OfdDocument, error) {
 	if common == nil {
 		common = docXML.CommonLegacy
 	}
-	if common != nil && common.PageArea != nil {
-		box, err := parseBox(common.PageArea.PhysicalBox)
-		if err == nil {
-			doc.Common.PhysicalBox = box
+	if common != nil {
+		if common.PageArea != nil {
+			box, err := parseBox(common.PageArea.PhysicalBox)
+			if err == nil {
+				doc.Common.PhysicalBox = box
+			}
 		}
+		// The resource maps stay referenced only if their declarations are
+		// projected into the model: the writer re-emits CommonData from it, and
+		// the maps themselves are copied over as unmodeled members.
+		doc.Common.PublicRes = resourceRef(common.PublicRes)
+		doc.Common.DocumentRes = resourceRef(common.DocumentRes)
 	}
 
 	pages := make([]Page, 0, len(docXML.Pages))
@@ -136,6 +143,15 @@ func (c *Container) readPage(dir string, ref pageRefXML) (Page, error) {
 		return Page{}, fmt.Errorf("parse %s: %w", contentPath, err)
 	}
 	return buildPage(ref, &px)
+}
+
+// resourceRef projects a CommonData resource-map declaration onto the model.
+// An absent or empty declaration yields nil so the writer emits no element.
+func resourceRef(x *resRefXML) *ResourceRef {
+	if x == nil || (x.ID == "" && x.BaseLoc == "") {
+		return nil
+	}
+	return &ResourceRef{ID: x.ID, BaseLoc: x.BaseLoc}
 }
 
 // ErrNotOFD is returned when a file is not a recognisable OFD container.

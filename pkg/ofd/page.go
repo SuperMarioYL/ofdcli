@@ -41,6 +41,21 @@ func parseBox(s string) (Box, error) {
 	return b, nil
 }
 
+// objectBox parses a content object's Boundary attribute. GB/T 33190 requires
+// Boundary on CT_Text/CT_Path/CT_Image, so an absent value is an error rather
+// than a zero box: reporting [0,0,0,0] would fabricate a measured position and
+// size for an object that declared none.
+func objectBox(kind, id, boundary string) (Box, error) {
+	if strings.TrimSpace(boundary) == "" {
+		return Box{}, fmt.Errorf("%s object %q: missing Boundary attribute", kind, id)
+	}
+	box, err := parseBox(boundary)
+	if err != nil {
+		return Box{}, fmt.Errorf("%s object %q: %w", kind, id, err)
+	}
+	return box, nil
+}
+
 // buildPage maps a parsed pageXML (Content.xml) onto a domain Page, joining it
 // with the page-ref metadata (ID, BaseLoc) carried by Document.xml.
 func buildPage(ref pageRefXML, px *pageXML) (Page, error) {
@@ -48,17 +63,17 @@ func buildPage(ref pageRefXML, px *pageXML) (Page, error) {
 		ID:      firstNonEmpty(ref.ID, px.ID),
 		BaseLoc: ref.BaseLoc,
 	}
-	if px.Area != nil {
+	if px.Area != nil && strings.TrimSpace(px.Area.Boundary) != "" {
 		box, err := parseBox(px.Area.Boundary)
 		if err != nil {
 			return Page{}, fmt.Errorf("ofd: page %q area: %w", p.ID, err)
 		}
 		p.Area = &box
-	} else if ref.Area != nil && ref.Area.PhysicalBox != "" {
+	} else if ref.Area != nil && strings.TrimSpace(ref.Area.PhysicalBox) != "" {
 		// The producer declared the page geometry on the <Page> element in
-		// Document.xml (PageArea/PhysicalBox) and Content.xml carries no
-		// <Area> of its own; use that declaration instead of reporting no
-		// page size at all.
+		// Document.xml (PageArea/PhysicalBox) and Content.xml carries no usable
+		// <Area Boundary> of its own; use that declaration instead of reporting
+		// no page size at all.
 		box, err := parseBox(ref.Area.PhysicalBox)
 		if err != nil {
 			return Page{}, fmt.Errorf("ofd: page %q area: %w", p.ID, err)
@@ -87,9 +102,9 @@ func buildLayer(lx layerXML) (Layer, error) {
 
 	layer.TextObjects = make([]TextObject, 0, len(lx.TextObjects))
 	for _, tx := range lx.TextObjects {
-		box, err := parseBox(tx.Boundary)
+		box, err := objectBox("text", tx.ID, tx.Boundary)
 		if err != nil {
-			return Layer{}, fmt.Errorf("text object %q: %w", tx.ID, err)
+			return Layer{}, err
 		}
 		var b strings.Builder
 		for _, tc := range tx.TextCodes {
@@ -106,9 +121,9 @@ func buildLayer(lx layerXML) (Layer, error) {
 
 	layer.PathObjects = make([]PathObject, 0, len(lx.PathObjects))
 	for _, px := range lx.PathObjects {
-		box, err := parseBox(px.Boundary)
+		box, err := objectBox("path", px.ID, px.Boundary)
 		if err != nil {
-			return Layer{}, fmt.Errorf("path object %q: %w", px.ID, err)
+			return Layer{}, err
 		}
 		layer.PathObjects = append(layer.PathObjects, PathObject{
 			ID:     px.ID,
@@ -119,9 +134,9 @@ func buildLayer(lx layerXML) (Layer, error) {
 
 	layer.ImageObjects = make([]ImageObject, 0, len(lx.ImageObjects))
 	for _, ix := range lx.ImageObjects {
-		box, err := parseBox(ix.Boundary)
+		box, err := objectBox("image", ix.ID, ix.Boundary)
 		if err != nil {
-			return Layer{}, fmt.Errorf("image object %q: %w", ix.ID, err)
+			return Layer{}, err
 		}
 		layer.ImageObjects = append(layer.ImageObjects, ImageObject{
 			ID:         ix.ID,

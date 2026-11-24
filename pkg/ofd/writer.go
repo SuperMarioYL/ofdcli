@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 )
 
@@ -57,6 +58,12 @@ func writeArchive(outPath string, doc *OfdDocument, src *Container) error {
 	dir := docDir(docRoot)
 	refs := pageRefs(doc, docRoot)
 
+	// A symlinked destination is written through, not replaced by a regular
+	// file: resolve it before the completed archive is renamed onto it.
+	if resolved, err := filepath.EvalSymlinks(outPath); err == nil {
+		outPath = resolved
+	}
+
 	// The source container is still an open zip reader on its own path: creating
 	// outPath at that path would truncate the file this call is about to read
 	// member data from, destroying the caller's input. Refuse before any file
@@ -65,13 +72,25 @@ func writeArchive(outPath string, doc *OfdDocument, src *Container) error {
 		return fmt.Errorf("ofd: write: input and output are the same file (%q); write to a different path", outPath)
 	}
 
-	f, err := os.Create(outPath)
+	// Package into a temp file beside the destination and rename it into place
+	// only once the archive is complete. Creating outPath directly would leave
+	// an existing document at that path truncated to nothing whenever packaging
+	// fails (e.g. an unreadable source member), losing the caller's previous
+	// output along with the in-flight one.
+	tmp, err := os.CreateTemp(filepath.Dir(outPath), ".ofdcli-*.tmp")
 	if err != nil {
-		return fmt.Errorf("ofd: create %q: %w", outPath, err)
+		return fmt.Errorf("ofd: create temp file for %q: %w", outPath, err)
 	}
-	defer f.Close()
+	tmpName := tmp.Name()
+	committed := false
+	defer func() {
+		if !committed {
+			tmp.Close()
+			os.Remove(tmpName)
+		}
+	}()
 
-	zw := zip.NewWriter(f)
+	zw := zip.NewWriter(tmp)
 	if err := writeOFDManifest(zw, doc, docRoot); err != nil {
 		return err
 	}
@@ -91,6 +110,22 @@ func writeArchive(outPath string, doc *OfdDocument, src *Container) error {
 	if err := zw.Close(); err != nil {
 		return fmt.Errorf("ofd: close archive: %w", err)
 	}
+	// os.CreateTemp creates 0600 files; keep an existing destination's mode and
+	// fall back to the plain 0644 a regular create would leave.
+	mode := os.FileMode(0o644)
+	if fi, err := os.Stat(outPath); err == nil {
+		mode = fi.Mode().Perm()
+	}
+	if err := tmp.Chmod(mode); err != nil {
+		return fmt.Errorf("ofd: set mode on %q: %w", outPath, err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("ofd: close %q: %w", outPath, err)
+	}
+	if err := os.Rename(tmpName, outPath); err != nil {
+		return fmt.Errorf("ofd: rename temp archive to %q: %w", outPath, err)
+	}
+	committed = true
 	return nil
 }
 
@@ -185,15 +220,28 @@ func writeOFDManifest(zw *zip.Writer, doc *OfdDocument, docRoot string) error {
 // ones resolved by pageRefs, i.e. the same locations the content members are
 // written to. The page-area default is serialised under the standard's
 // CommonData element (GB/T 33190 CT_CommonData) and only when the model
-// actually carries one — a fabricated "0 0 0 0" box is never emitted.
+// actually carries one — a fabricated "0 0 0 0" box is never emitted. The
+// PublicRes/DocumentRes declarations are serialised alongside it: the resource
+// maps themselves are carried over as unmodeled members, so omitting these
+// references would leave every ImageObject/Font ResourceID dangling.
 func writeDocumentXML(zw *zip.Writer, doc *OfdDocument, docRoot string, refs []pageRefXML) error {
 	dx := documentXML{Pages: refs}
+	common := &commonXML{}
+	hasCommon := false
 	if doc.Common.PhysicalBox.W != 0 || doc.Common.PhysicalBox.H != 0 {
-		dx.Common = &commonXML{
-			PageArea: &pageAreaXML{
-				PhysicalBox: formatBox(doc.Common.PhysicalBox),
-			},
-		}
+		common.PageArea = &pageAreaXML{PhysicalBox: formatBox(doc.Common.PhysicalBox)}
+		hasCommon = true
+	}
+	if ref := doc.Common.PublicRes; ref != nil {
+		common.PublicRes = &resRefXML{ID: ref.ID, BaseLoc: relToDocDir(ref.BaseLoc, docRoot)}
+		hasCommon = true
+	}
+	if ref := doc.Common.DocumentRes; ref != nil {
+		common.DocumentRes = &resRefXML{ID: ref.ID, BaseLoc: relToDocDir(ref.BaseLoc, docRoot)}
+		hasCommon = true
+	}
+	if hasCommon {
+		dx.Common = common
 	}
 	return writeXMLMember(zw, docRoot, &dx)
 }

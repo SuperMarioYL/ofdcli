@@ -1,6 +1,7 @@
 package ofd
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -163,6 +164,78 @@ func TestOpen_NotAZip(t *testing.T) {
 	}
 	if _, err := Open(tmp); err == nil {
 		t.Fatalf("Open on non-zip returned nil error, want error")
+	}
+}
+
+// onePageFixture wraps a single Content.xml document body in a minimal OFD so a
+// page-parsing rule can be exercised on its own.
+func onePageFixture(content string) []zipEntry {
+	return []zipEntry{
+		{name: "OFD.xml", data: []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<ofd:OFD xmlns:ofd="http://www.ofdspec.org/2016" DocType="OFD" Version="1.1">
+  <ofd:DocBody><ofd:DocRoot>Doc_0/Document.xml</ofd:DocRoot></ofd:DocBody>
+</ofd:OFD>
+`)},
+		{name: "Doc_0/Document.xml", data: []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Document xmlns:ofd="http://www.ofdspec.org/2016" ID="Doc_0">
+  <ofd:Pages><ofd:Page ID="Page_0" BaseLoc="Pages/Page_0/Content.xml"/></ofd:Pages>
+</ofd:Document>
+`)},
+		{name: "Doc_0/Pages/Page_0/Content.xml", data: []byte(content)},
+	}
+}
+
+// TestRead_MissingObjectBoundaryErrors is the regression test for the v0.3.0
+// defect where parseBox mapped an absent Boundary to a zero box, so `read`
+// reported "boundary":[0,0,0,0] — a fabricated position and size — for an
+// object that declared no geometry, with exit status 0.
+func TestRead_MissingObjectBoundaryErrors(t *testing.T) {
+	content := `<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Page xmlns:ofd="http://www.ofdspec.org/2016" ID="Page_0">
+  <ofd:Content><ofd:Layer ID="Layer_0" Type="Body">
+    <ofd:TextObject ID="Text_0" Font="Font_0" Size="22"><ofd:TextCode>无边界文本</ofd:TextCode></ofd:TextObject>
+  </ofd:Layer></ofd:Content>
+</ofd:Page>
+`
+	c, err := Open(buildZip(t, onePageFixture(content)))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer c.Close()
+
+	doc, err := c.Read()
+	if err == nil {
+		t.Fatalf("REPRODUCED (v0.3.0 fabricated geometry): Read accepted a TextObject without Boundary and produced %+v", doc.ToJSON())
+	}
+	if !strings.Contains(err.Error(), "Text_0") || !strings.Contains(err.Error(), "Boundary") {
+		t.Fatalf("error should name the object and the missing attribute, got: %v", err)
+	}
+}
+
+// TestRead_EmptyAreaIsUnset is the regression test for the page-level half of
+// the same v0.3.0 defect: an <Area/> without a Boundary produced a non-nil zero
+// box, so `info` printed page size "0x0" instead of "(unset)".
+func TestRead_EmptyAreaIsUnset(t *testing.T) {
+	content := `<?xml version="1.0" encoding="UTF-8"?>
+<ofd:Page xmlns:ofd="http://www.ofdspec.org/2016" ID="Page_0">
+  <ofd:Area/>
+  <ofd:Content><ofd:Layer ID="Layer_0" Type="Body">
+    <ofd:TextObject ID="Text_0" Boundary="56.7 20 96.6 40"><ofd:TextCode>正文</ofd:TextCode></ofd:TextObject>
+  </ofd:Layer></ofd:Content>
+</ofd:Page>
+`
+	c, err := Open(buildZip(t, onePageFixture(content)))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer c.Close()
+
+	doc, err := c.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if doc.Pages[0].Area != nil {
+		t.Fatalf("REPRODUCED (v0.3.0 reported a zero page box): Area = %+v, want nil", *doc.Pages[0].Area)
 	}
 }
 

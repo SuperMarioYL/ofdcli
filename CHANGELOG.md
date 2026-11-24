@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-25
+
+### Fixed
+
+- A failed rewrite no longer destroys an existing document at the output path:
+  the writer packages into a temporary file beside `-o` and renames it into
+  place only once the archive is complete. Previously `os.Create` truncated the
+  destination before packaging, so an error while copying an unreadable source
+  member (for example an archive member with an unsupported compression method)
+  left the previous document at 0 bytes even though the command exited non-zero.
+- `ofdcli read` no longer fabricates a `[0,0,0,0]` boundary for a text, path or
+  image object whose required `Boundary` attribute is missing: the object is
+  reported as malformed instead. An empty `<Area/>` likewise leaves the page
+  geometry unset, so `ofdcli info` prints "(unset)" instead of "0x0".
+- Rewriting keeps the document's resource maps referenced: the `PublicRes` and
+  `DocumentRes` declarations under `CommonData` are read into the model and
+  written back. Previously the writer re-serialised `CommonData` with
+  `PageArea` alone, so the copied `PublicRes.xml` / `DocumentRes.xml` members
+  became unreferenced and every `ResourceID` (images such as a 印章 seal, fonts)
+  dangled in reference viewers.
+
 ## [0.3.0] - 2026-10-21
 
 ### Fixed
@@ -65,7 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ofdcli write` — read an OFD and re-emit it as a structurally normalised,
   GB/T 33190-compliant container.
 
-[Unreleased]: https://github.com/SuperMarioYL/ofdcli/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/SuperMarioYL/ofdcli/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.2.0
 [0.1.0]: https://github.com/SuperMarioYL/ofdcli/releases/tag/v0.1.0

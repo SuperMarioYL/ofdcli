@@ -106,7 +106,9 @@ The following routes are implemented in the source. Choose the input that matche
 
 ## Limits and next steps
 
-- Rewriting re-serializes the supported model objects and carries unmodeled archive members (Res/ fonts, images, attachments) over verbatim, so ResourceID references stay resolvable; full visual fidelity of arbitrary OFD files is not guaranteed. Keep the original and validate rewritten documents with your viewer.
+- Rewriting packages into a temporary file and renames it into place, so a failed rewrite leaves any existing document at the `-o` path untouched; an output path that resolves to the input file is refused.
+- Rewriting re-serializes the supported model objects and carries unmodeled archive members (Res/ fonts, images, attachments) over verbatim, and keeps the CommonData PublicRes/DocumentRes resource-map declarations, so ResourceID references stay resolvable. The remaining CommonData children (e.g. MaxUnitID, TempDir) are not modelled; full visual fidelity of arbitrary OFD files is not guaranteed. Keep the original and validate rewritten documents with your viewer.
+- A text, path or image object without its required Boundary attribute is reported as malformed instead of yielding `[0,0,0,0]`, and an empty `<Area/>` shows as `(unset)` in `info`.
 - The sample is a synthetic document; successful parsing is not standards certification or legal validation.
 - Template generation, electronic seals and the planned validate command are not implemented here.
 

@@ -59,9 +59,22 @@ type documentXML struct {
 	Pages        []pageRefXML `xml:"Pages>Page"`
 }
 
-// commonXML holds page-area defaults shared across the document's pages.
+// commonXML holds the page-area defaults and the document's resource-map
+// declarations shared across the document's pages. PublicRes/DocumentRes point
+// at the PublicRes.xml / DocumentRes.xml members; the members themselves are
+// carried over as unmodeled members by the writer, so these references must
+// survive a rewrite or every ResourceID in the archive dangles.
 type commonXML struct {
-	PageArea *pageAreaXML `xml:"PageArea"`
+	PageArea    *pageAreaXML `xml:"PageArea"`
+	PublicRes   *resRefXML   `xml:"PublicRes,omitempty"`
+	DocumentRes *resRefXML   `xml:"DocumentRes,omitempty"`
+}
+
+// resRefXML is a CT_Res reference: a resource map declared by ID plus a BaseLoc
+// relative to the enclosing Doc_N/ directory.
+type resRefXML struct {
+	ID      string `xml:"ID,attr,omitempty"`
+	BaseLoc string `xml:"BaseLoc,attr,omitempty"`
 }
 
 // pageAreaXML is CT_PageArea; PhysicalBox is "x y w h" in mm (the OFD default unit).

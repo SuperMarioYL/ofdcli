@@ -133,6 +133,41 @@ func TestCommonData_WriteRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCommonData_ReadsResourceMapDeclarations(t *testing.T) {
+	// CommonData's PublicRes/DocumentRes declarations point at the resource-map
+	// members (fonts, media). The writer re-emits CommonData from the model, so
+	// they only survive a rewrite if Read projects them.
+	c, err := Open(buildZip(t, resMapFixture()))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer c.Close()
+	doc, err := c.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if doc.Common.PublicRes == nil || doc.Common.PublicRes.ID != "20" || doc.Common.PublicRes.BaseLoc != "PublicRes.xml" {
+		t.Fatalf("REPRODUCED (v0.3.0 dropped it): Common.PublicRes = %+v, want ID=20 BaseLoc=PublicRes.xml", doc.Common.PublicRes)
+	}
+	if doc.Common.DocumentRes == nil || doc.Common.DocumentRes.ID != "21" || doc.Common.DocumentRes.BaseLoc != "DocumentRes.xml" {
+		t.Fatalf("REPRODUCED (v0.3.0 dropped it): Common.DocumentRes = %+v, want ID=21 BaseLoc=DocumentRes.xml", doc.Common.DocumentRes)
+	}
+
+	// A document without resource maps must keep both fields nil.
+	plain, err := Open(buildZip(t, commonDataFixtureEntries()))
+	if err != nil {
+		t.Fatalf("Open plain: %v", err)
+	}
+	defer plain.Close()
+	pd, err := plain.Read()
+	if err != nil {
+		t.Fatalf("Read plain: %v", err)
+	}
+	if pd.Common.PublicRes != nil || pd.Common.DocumentRes != nil {
+		t.Fatalf("undeclared resource maps = %+v / %+v, want nil/nil", pd.Common.PublicRes, pd.Common.DocumentRes)
+	}
+}
+
 func TestCommonData_NoBoxOmitsCommonData(t *testing.T) {
 	// A model with no page-area default must not gain a fabricated
 	// <CommonData><PageArea><PhysicalBox>0 0 0 0</PhysicalBox>, and written
